@@ -13,4 +13,9 @@ print("I'm learning to use Github...and desperately praying this works")
 ```
 
 
+```{r}
+print("Second change to the document, hope it commits properly")
+```
+
+
 
