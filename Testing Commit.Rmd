@@ -1,0 +1,16 @@
+---
+title: "Testing Commit"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Test of git commit capabilities
+```{r}
+print("I'm learning to use Github...and desperately praying this works")
+```
+
+
+
