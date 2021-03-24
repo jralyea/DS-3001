@@ -1,0 +1,229 @@
+---
+title: "Lab 1"
+author: "William Cull, John Hope, Jay Ralyea"
+date: "2/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+library(readr)
+```
+
+
+```{r cars}
+beaches <- read.csv("beaches.csv")
+view(beaches)
+
+#Beaches dataset
+#Q1 - what is the difference of average rainfall between August 2013 and January 2018? 
+###Pseudo Code Steps###
+#1. group_by month and year
+#2. filter for the respective years and months
+#3. summarize for the mean rainfall in the filtered datasets
+beaches25 <- beaches %>%
+  na.omit(beaches) %>%
+  group_by(month,year)
+beaches1 <- filter(beaches,month=="8",year=="2013") %>%
+  summarise(beaches1,mean(rainfall))
+beaches2 <- filter(beaches,month=="1",year=="2018") %>%
+  summarize(beaches2,mean(rainfall))
+  #4.24 - 2.08 == 2.16 ****
+  
+beaches_rainfall <- function(){
+    beaches %>%
+    filter(month=="1",year=="2018") %>%
+    select(rainfall) %>%
+    summarize(beaches,sum18 <- mean("rainfall"),na.rm)
+
+    beaches %>% 
+    filter(month=="8",year=="2013") %>%
+    select(rainfall) %>%
+    summarize(beaches,sum13 <- mean("rainfall"))
+return(c(sum18,sum13))
+}
+
+beaches_rainfall()
+  
+#__________________________________________________________
+
+#Q2- what month in 2018 had the highest recorded temperature? 
+###Pseudo Code Steps###
+#1. filter out all non-2018 observations and any observations that do not contain a temp value. 
+#2. group by month 
+#3. Summarize max temperature
+xbeach <- beaches %>%
+  na.omit(beaches) %>%
+  filter(year==2018) %>%
+  group_by(year, month)%>%
+  summarize(max.temp = max(tempature))
+
+max_temp_2018 <- function(){
+  xbeaches1 <-beaches %>%
+  filter(year==2018) %>%
+  group_by(year,month) %>%
+  summarize(beaches,x<-max("tempature"))
+  return(x)
+}
+max_temp_2018()
+
+
+
+link <- ("http://users.stat.ufl.edu/~winner/data/nfl2008_fga.txt")
+read_csv(link)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+```{r cars}
+```
+
+
+```{r cars}
+```
+```{r cars}
+#Wine dataset
+  
+#Q1 - what is the average residual sugar of a wine with quality of 8
+###Pseudo Code Steps###
+#1. Import wine data
+#2. Employ a filter function to new database for observations with quality value of 8 for the filter
+#3. Use summarize function to find mean of “residual sugar” for new database
+  
+  
+ winequality_red <- read_delim("winequality-red.csv",
+                                ";", escape_double = FALSE, trim_ws = TRUE)
+ 
+ x<- winequality_red %>%
+   select(quality) %>%
+   filter(quality==8) %>%
+summarize(x,mean("residual sugar"))
+
+sugar_func <- function(){
+  x<- winequality_red %>%
+    select(quality) %>%
+    filter(quality==8) %>%
+summarize(x,mean("residual sugar"))
+  
+}
+sugar_func()
+ 
+
+#Q2 - What are the top “total acid” values for all observations? 
+#Pseudo Code Steps
+#1. use select function and Starts_with function to locate all acid related columns 
+#2. Utilize mutate function to create new column that adds first acid columns together
+#3. Use arrange function and col to re-order the rows so that the highest total acid values are shown 
+  
+ winequality_red %>%
+   select(ends_with("acid"), ends_with("dity")) %>%
+   mutate(total_acid = `volatile acidity`+`citric acid`+`fixed acidity`) %>%
+   arrange("total acid")
+ 
+ 
+ wine_acid <- function(){
+   x <- winequality_red %>%
+     select(ends_with("acid"), ends_with("dity")) %>%
+     mutate(total_acid = `volatile acidity`+`citric acid`+`fixed acidity`)
+   max(x,"total_acid",na.rm = TRUE)
+ }
+ wine_acid()
+```
+
+```{r cars}
+# Euro Energy Database
+
+library(readr)
+ EuroEnergy <- read_csv("EuroEnergy.csv")
+ View(EuroEnergy)
+ 
+#Q1 - What is the energy average of countries with gdp above the mean
+#Pseudo Code Steps
+#1. Utilize summarize function to determine mean of gdp 
+#2. Filter for countries with gdp above the mean 
+#3. Utilize summarize function to determine energy use mean of above avg. GDP countries
+
+x <- EuroEnergy %>%
+  na.omit(EuroEnergy) %>%
+  summarise(EuroEnergy, eurogdpmean = mean(gdp, na.rm = TRUE)) %>%
+  filter(gdp >=eurogdpmean) %>%
+  summarise(EuroEnergy,euroenergymean <- mean(energy))
+  
+  Energy_mean <- function(){
+  w <- EuroEnergy %>%
+    select(gdp,energy) %>%
+    filter(gdp > mean(gdp))
+  return(summarise(w,mean(energy)))
+  }
+Energy_mean()
+
+
+##Q2 Does West Germany consume more units of energy (per 10000 people) relative to their GDP than Italy does with its own respective GDP and energy use? 
+#1. Filter the data for West Germany and Italy
+#2. Utilize mutate function to create new energy/10000 column 
+#3. Utilize mutate function to generate energy to gdp ratios and compare
+ EuroEnergy1 <- EuroEnergy %>%
+   select(X1,gdp,energy) %>%
+   filter(X1 %in% c("WGermany","Italy"))%>%
+   mutate(ratio_10k = energy/(gdp/10000))
+   #West Germany#
+ 
+gdpratio_by_10k <- function(){
+  gdpratiofunc <- EuroEnergy %>%
+   select(X1,gdp,energy) %>%
+   filter(X1 %in% c("WGermany","Italy"))
+   E2 <-mutate(EuroEnergy,ratio_10k = energy/(gdp/10000))
+   return(E2)
+}
+gdpratio_by_10k()
+
+
+
+
+
+
+```
+
+
+```{r cars}
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
