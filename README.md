@@ -1,2 +1,2 @@
-# DS-3001
-DS 3001 folder for assignments and such.
+# DS-3001-Lab8
+DS 3001 Lab 8 assignment.
