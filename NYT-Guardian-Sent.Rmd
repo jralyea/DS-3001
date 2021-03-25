@@ -1,0 +1,16 @@
+---
+title: "NYT-Guardian-Sent"
+author: "Jay Ralyea"
+date: "3/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Search term: Text mining.
+
+January 1, 2010
+The Guardian (London): 14 articles
+The New York Times: 6 articles
+
