@@ -14,3 +14,73 @@ January 1, 2010
 The Guardian (London): 14 articles
 The New York Times: 6 articles
 
+```{r}
+library(tidyverse)
+#install.packages("tidytext")
+library(tidytext)
+#install.packages("ggwordcloud")
+library(ggwordcloud)
+#install.packages('textdata')
+library(textdata)
+library(textreadr)
+```
+
+```{r}
+# Testing chunk
+
+test.doc <- read_rtf("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles/Price Forecasts For Electronics.rtf") %>%
+  tibble() %>%
+  rename(text = ".")
+
+which(test.doc$. == "Body")
+which(test.doc$. == "Classification")
+
+test.slice <- slice(test.doc, 9:20)
+unnest_tokens(test.slice, word, text)
+
+test.doc[9:20,]
+
+
+is.character(test.slice$.)
+
+test.doc[9:20, ]
+
+```
+
+
+```{r}
+guardian_read <- function(title){
+  guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
+  path <- paste(guard_path, title, sep = "/")
+  tib <- path %>%
+    read_rtf() %>%
+    tibble() %>%
+    rename(text = ".")
+  to_text(tib)
+}
+
+nyt_read <- function(title){
+  nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
+  path <- paste(nyt_path, title, sep = "/")
+  tib <- path %>%
+    read_rtf() %>%
+    tibble() %>%
+    rename(text = ".")
+  to_text(tib)
+}
+
+to_text <- function(tib){
+  begin.text <- which(tib$text == "Body") + 1
+  end.text <- which(tib$text == "Classification") - 1
+  tib <- tib[begin.text:end.text, ]
+  unnest_tokens(tib, word, text) %>%
+    anti_join(stop_words)
+}
+```
+
+
+
+
+
+
+
