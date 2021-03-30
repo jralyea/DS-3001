@@ -22,19 +22,9 @@ library(textreadr)
 guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
 nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
 
-# Function to read in the data from the guardian
-guardian_read <- function(title){
-  path <- paste(guard_path, title, sep = "/") #combine title of article w/ path
-  tib <- path %>%
-    read_rtf() %>%
-    tibble() %>%
-    rename(text = ".") # rename column as "text" instead of "."
-  to_text(tib) # calls on function created below
-}
-
-# Function to read data from the New York Times(NYT)
-nyt_read <- function(title){
-  path <- paste(nyt_path, title, sep = "/") #combine title of article w/ path
+# Function to read in rtf files based on folder location and article title
+rtf_read <- function(folder, title){
+  path <- paste(folder, title, sep = "/") #combine title of article w/ path
   tib <- path %>%
     read_rtf() %>%
     tibble() %>%
@@ -66,7 +56,7 @@ Guard_files <- tibble()
 # Add relevant words in Guardian articles to Guardian tibble
 for (article in guardian_articles){
   Guard_files <- Guard_files %>% # splits articles into single words
-    bind_rows(guardian_read(article)) # binds words to end of tibble
+    bind_rows(rtf_read(guard_path, article)) # binds words to end of tibble
 }
 
 # Define blank tibble for relevant words in NYT articles
@@ -75,7 +65,7 @@ NYT_files <- tibble()
 # Add relevant words in NYT articles to NYT tibble
 for (article in nyt_articles){
   NYT_files <- NYT_files %>% # splits articles into single words
-    bind_rows(nyt_read(article)) # binds words to end of tibble
+    bind_rows(rtf_read(nyt_path, article)) # binds words to end of tibble
 }
 
 ```
