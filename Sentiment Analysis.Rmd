@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 library(tidyverse)
 library(tidytext)
 library(ggwordcloud)
@@ -19,8 +19,8 @@ library(textreadr)
 
 ```{r JayRalyea}
 # Path will need to be updated depending on your system
-guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
-nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
+guard.path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
+nyt.path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
 
 # Function to read in rtf files based on folder location and article title
 rtf_read <- function(folder, title){
@@ -56,8 +56,12 @@ Guard_files <- tibble()
 # Add relevant words in Guardian articles to Guardian tibble
 for (article in guardian_articles){
   Guard_files <- Guard_files %>% # splits articles into single words
-    bind_rows(rtf_read(guard_path, article)) # binds words to end of tibble
+    bind_rows(rtf_read(guard.path, article)) # binds words to end of tibble
 }
+
+# Count for each word in Guardian articles
+Guard_files <- Guard_files %>%
+  count(word, sort = TRUE)
 
 # Define blank tibble for relevant words in NYT articles
 NYT_files <- tibble()
@@ -65,8 +69,12 @@ NYT_files <- tibble()
 # Add relevant words in NYT articles to NYT tibble
 for (article in nyt_articles){
   NYT_files <- NYT_files %>% # splits articles into single words
-    bind_rows(rtf_read(nyt_path, article)) # binds words to end of tibble
+    bind_rows(rtf_read(nyt.path, article)) # binds words to end of tibble
 }
+
+# Count for each word in NYT articles
+NYT_files <- NYT_files %>%
+  count(word, sort = TRUE)
 
 ```
 
@@ -105,7 +113,6 @@ CHE_files <- CHE_files %>%
 ```{r BillCull}
 UW <- read_lines(paste(folder, titles[3], sep = "/"))
 UW <- tibble(UW)
-View(UW)
 UW$UW <- as.character(UW$UW)
 UW_files <- UW %>%
   rename(text = "UW") %>%
@@ -147,6 +154,41 @@ uw.nrc <- sent_func(UW_files, "nrc")
 uw.bing <- sent_func(UW_files, "bing")
 ```
 
+# Wordclouds {.tabset}
+## The Guardian
+```{r}
+# Create wordcloud for the 50 words with the most mentions
+wordcloud <- function(file){
+  ggplot(file[1:50, ], aes(label = word, size = n)) +
+  geom_text_wordcloud() +
+  theme_minimal()
+}
+
+# Guardian Wordcloud
+wordcloud(Guard_files)
+```
+## The New York Times
+```{r}
+# NYT Wordcloud
+wordcloud(NYT_files)
+```
+## CE Noticias Financieras English
+```{r}
+# CE Wordcloud
+wordcloud(CE_files)
+```
+## The Chronicle of Higher Education
+```{r}
+# CHE Wordcloud
+wordcloud(CHE_files)
+```
+
+## University Wire
+```{r}
+# UW Wordcloud
+wordcloud(UW_files)
+```
+
 
 # AFINN Histograms {.tabset}
 ## The Guardian
@@ -160,26 +202,31 @@ histo <- function(afinn){
     theme_bw()
 }
 
+# Guardian Histogram
 histo(guard.afinn)
 ```
 
 ## The New York Times
 ```{r}
+# NYT Histogram
 histo(nyt.afinn)
 ```
 
 ## CE Noticias Financieras English
 ```{r}
+# CE Histogram
 histo(ce.afinn)
 ```
 
 ## The Chronicle of Higher Education
 ```{r}
+# CHE Histogram
 histo(che.afinn)
 ```
 
 ## University Wire
 ```{r}
+# UW Histogram
 histo(uw.afinn)
 ```
 
