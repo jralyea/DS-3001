@@ -26,10 +26,12 @@ library(textdata)
 library(textreadr)
 ```
 
-```{r TestChunk}
-# Testing chunk
-# This code is completely irrelevant to the task at hand,
-# other than me testing random methods to complete the assignment
+```{r TestChunk, eval=FALSE}
+#################################################################
+# Testing chunk. This code is completely irrelevant to the task 
+# at hand, other than me testing random methods to complete the 
+# assignment
+#################################################################
 
 test.doc <- read_rtf("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles/Price Forecasts For Electronics.rtf") %>%
   tibble() %>%
@@ -78,31 +80,34 @@ test.guard.list
 
 
 ```{r ReadingDataFunctions}
-# Function to read in the data from the guardian
 # Path will need to be updated depending on your system
+guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
+nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
+
+# Function to read in the data from the guardian
 guardian_read <- function(title){
-  guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
   path <- paste(guard_path, title, sep = "/") #combine title of article w/ path
   tib <- path %>%
     read_rtf() %>%
     tibble() %>%
-    rename(text = ".")
-  to_text(tib)
+    rename(text = ".") # rename column as "text" instead of "."
+  to_text(tib) # calls on function created below
 }
 
 # Function to read data from the New York Times(NYT)
-# Path will need to be updated depending on your system
 nyt_read <- function(title){
-  nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
   path <- paste(nyt_path, title, sep = "/") #combine title of article w/ path
   tib <- path %>%
     read_rtf() %>%
     tibble() %>%
-    rename(text = ".")
-  to_text(tib)
+    rename(text = ".") # rename column as "text" instead of "."
+  to_text(tib) # calls on function created below
 }
 
 # Function finds relevant text and un-nests all words into individual rows
+# The relevant text begins after the tibble row that contains "Body" and ends
+# after the tibble row that contains "Classification." This appears to be true
+# for all files downloaded from LexisNexus.
 to_text <- function(tib){
   begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
   end.text <- which(tib$text == "Classification") - 1 # end of relevant text
@@ -124,8 +129,8 @@ guardian_tib <- tibble()
 
 # Add relevant words in Guardian articles to Guardian tibble
 for (article in guardian_articles){
-  guardian_tib <- guardian_tib %>%
-    bind_rows(guardian_read(article))
+  guardian_tib <- guardian_tib %>% # splits articles into single words
+    bind_rows(guardian_read(article)) # binds words to end of tibble
 }
 
 # Define blank tibble for relevant words in NYT articles
@@ -133,8 +138,8 @@ nyt_tib <- tibble()
 
 # Add relevant words in NYT articles to NYT tibble
 for (article in nyt_articles){
-  nyt_tib <- nyt_tib %>%
-    bind_rows(nyt_read(article))
+  nyt_tib <- nyt_tib %>% # splits articles into single words
+    bind_rows(nyt_read(article)) # binds words to end of tibble
 }
 
 ```
@@ -203,6 +208,43 @@ ggplot(nyt.afinn, aes(x = value)) +
 ```
 
 ```{r TF-IDF}
+raw_read <- function(folder, title){
+  folder_path <- folder
+  path <- paste(folder_path, title, sep = "/") #combine title of article w/ path
+  tib <- path %>%
+    read_rtf() %>%
+    tibble() %>%
+    rename(text = ".") %>% # rename column as "text" instead of "." 
+    filter(text != "ABSTRACT" & text != "FULL TEXT")
+  relevant_words(tib)
+}
+
+relevant_words <- function(tib){
+  begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
+  end.text <- which(tib$text == "Classification") - 1 # end of relevant text
+  tib[begin.text:end.text, ] # subset to only article text
+}
+
+guard_raw <- tibble()
+for (title in guardian_articles){
+  guard_raw <- guard_raw %>%
+    bind_rows(raw_read(guard_path, title))
+}
+
+nyt_raw <- tibble()
+for (title in nyt_articles){
+  nyt_raw <- nyt_raw %>%
+    bind_rows(raw_read(nyt_path, title))
+}
+
+# Data prep to allow TF-IDF operation on Guardian and NYT
+data_prep <- function(x,y,z){
+  i <- as_tibble(t(x))
+  ii <- unite(i,"text",y:z,remove = TRUE,sep = "")
+}
+
+
+
 
 ```
 
