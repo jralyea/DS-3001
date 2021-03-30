@@ -1,0 +1,252 @@
+---
+title: "Text Mining Sentiment"
+author: "William cull, John Hope, and Jay Ralyea"
+date: "3/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(tidytext)
+library(ggwordcloud)
+library(textdata)
+library(textreadr)
+```
+
+# Introduction
+
+
+```{r JayRalyea}
+# Path will need to be updated depending on your system
+guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
+nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
+
+# Function to read in the data from the guardian
+guardian_read <- function(title){
+  path <- paste(guard_path, title, sep = "/") #combine title of article w/ path
+  tib <- path %>%
+    read_rtf() %>%
+    tibble() %>%
+    rename(text = ".") # rename column as "text" instead of "."
+  to_text(tib) # calls on function created below
+}
+
+# Function to read data from the New York Times(NYT)
+nyt_read <- function(title){
+  path <- paste(nyt_path, title, sep = "/") #combine title of article w/ path
+  tib <- path %>%
+    read_rtf() %>%
+    tibble() %>%
+    rename(text = ".") # rename column as "text" instead of "."
+  to_text(tib) # calls on function created below
+}
+
+# Function finds relevant text and un-nests all words into individual rows
+# The relevant text begins after the tibble row that contains "Body" and ends
+# after the tibble row that contains "Classification." This appears to be true
+# for all files downloaded from LexisNexus.
+to_text <- function(tib){
+  begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
+  end.text <- which(tib$text == "Classification") - 1 # end of relevant text
+  tib <- tib[begin.text:end.text, ] # subset to only article text
+  unnest_tokens(tib, word, text) %>%
+    anti_join(stop_words) # remove stop words from text
+}
+
+# All guardian article names
+guardian_articles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles")
+
+# All NYT article names
+nyt_articles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles")
+
+# Define blank tibble for relevant words in Guardian articles
+Guard_files <- tibble()
+
+# Add relevant words in Guardian articles to Guardian tibble
+for (article in guardian_articles){
+  Guard_files <- Guard_files %>% # splits articles into single words
+    bind_rows(guardian_read(article)) # binds words to end of tibble
+}
+
+# Define blank tibble for relevant words in NYT articles
+NYT_files <- tibble()
+
+# Add relevant words in NYT articles to NYT tibble
+for (article in nyt_articles){
+  NYT_files <- NYT_files %>% # splits articles into single words
+    bind_rows(nyt_read(article)) # binds words to end of tibble
+}
+
+```
+
+
+```{r JohnHope}
+# Folder CE and CHE files are saved in
+folder <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles"
+
+# Title of each newspaper
+titles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles")
+
+# The Spanish One
+CE_files <- read_rtf(paste(folder, titles[1], sep = "/"))
+CE_files <- tibble(CE_files)
+
+# Removing lines w/ information between articles information
+
+CE_files <- CE_files[-(c(1:66, 110:118, 130:138, 147:155, 197:205, 237:245, 260:268, 277:285, 296:297)),]
+
+CE_files <- CE_files %>%
+  unnest_tokens(word, CE_files) %>%
+  anti_join(stop_words) %>% 
+  count(word, sort=TRUE)
+
+# Chronicle of Higher Education
+CHE_files <- read_rtf(paste(folder, titles[2], sep = "/"))
+CHE_files <- tibble(CHE_files)
+CHE_files <- CHE_files[-(c(1:71, 97:103, 142:148, 177:183, 229:235, 299:305, 364:370, 410:416, 449:455, 479:480)),]
+
+CHE_files <- CHE_files %>%
+  unnest_tokens(word, CHE_files) %>%
+  anti_join(stop_words) %>% 
+  count(word, sort=TRUE)
+```
+
+```{r BillCull}
+UW <- read_lines(paste(folder, titles[3], sep = "/"))
+UW <- tibble(UW)
+View(UW)
+UW$UW <- as.character(UW$UW)
+UW_files <- UW %>%
+  rename(text = "UW") %>%
+  unnest_tokens(word,text) %>%
+  anti_join(stop_words) %>%
+  count(word, sort = TRUE) 
+```
+
+```{r Sentiments}
+# The Guardian Sentiments
+guard.afinn <- Guard_files %>%
+  inner_join(get_sentiments("afinn"))
+guard.nrc <- Guard_files %>%
+  inner_join(get_sentiments("nrc"))
+guard.bing <- Guard_files %>%
+  inner_join(get_sentiments("bing"))
+
+# The New York Times sentiments
+nyt.afinn <- NYT_files %>%
+  inner_join(get_sentiments("afinn"))
+nyt.nrc <- NYT_files %>%
+  inner_join(get_sentiments("nrc"))
+nyt.bing <- NYT_files %>%
+  inner_join(get_sentiments("bing"))
+
+# CE Noticias Financieras English sentiments
+ce.afinn <- CE_files %>%
+  inner_join(get_sentiments("afinn"))
+ce.nrc <- CE_files %>%
+  inner_join(get_sentiments("nrc"))
+ce.bing <- CE_files %>%
+  inner_join(get_sentiments("bing"))
+
+# The Chronicle of Higher Education sentiments
+che.afinn <- CHE_files %>%
+  inner_join(get_sentiments("afinn"))
+che.nrc <- CHE_files %>%
+  inner_join(get_sentiments("nrc"))
+che.bing <- CHE_files %>%
+  inner_join(get_sentiments("bing"))
+
+# University Wire sentiments
+uw.afinn <- UW_files %>%
+  inner_join(get_sentiments("afinn"))
+uw.nrc <- UW_files %>%
+  inner_join(get_sentiments("nrc"))
+uw.bing <- UW_files %>% 
+  inner_join(get_sentiments("bing"))
+```
+
+
+# AFINN Histograms {.tabset}
+## The Guardian
+```{r}
+ggplot(guard.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "Guardian Sentiment Range",
+       x = "Sentiment Value",
+       y = "Value Count") +  theme_bw()
+
+table(guard.afinn$value)
+```
+
+## The New York Times
+```{r}
+ggplot(nyt.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "New York Tiems Sentiment Range",
+       x = "Sentiment Value",
+       y = "Value Count") +  theme_bw()
+```
+
+## CE Noticias Financieras English
+```{r}
+ggplot(ce.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "CE Noticias Financieras Sentiment Range",
+       x = "Sentiment Value",
+       y = "Value Count") +  theme_bw()
+```
+
+## The Chronicle of Higher Education
+```{r}
+ggplot(che.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "Chronicle of Higher Education Sentiment Range",
+       x = "Sentiment Value",
+       y = "Value Count") +  theme_bw()
+```
+
+## University Wire
+```{r}
+ggplot(uw.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "University Wire Sentiment Range",
+       x = "Sentiment Value",
+       y = "Value Count") +  theme_bw()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
