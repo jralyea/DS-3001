@@ -208,6 +208,7 @@ ggplot(nyt.afinn, aes(x = value)) +
 ```
 
 ```{r TF-IDF}
+# Create tibble of article lines
 raw_read <- function(folder, title){
   folder_path <- folder
   path <- paste(folder_path, title, sep = "/") #combine title of article w/ path
@@ -215,22 +216,25 @@ raw_read <- function(folder, title){
     read_rtf() %>%
     tibble() %>%
     rename(text = ".") %>% # rename column as "text" instead of "." 
-    filter(text != "ABSTRACT" & text != "FULL TEXT")
+    filter(text != "ABSTRACT" & text != "FULL TEXT") # some articles have an abstract and full text sub-headers, remove them
   relevant_words(tib)
 }
 
+# Find the relevant sections in the article
 relevant_words <- function(tib){
   begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
   end.text <- which(tib$text == "Classification") - 1 # end of relevant text
   tib[begin.text:end.text, ] # subset to only article text
 }
 
+# Generate tibble of raw data for The Guardian
 guard_raw <- tibble()
 for (title in guardian_articles){
   guard_raw <- guard_raw %>%
     bind_rows(raw_read(guard_path, title))
 }
 
+# Generate tibble of raw data for The New York Times
 nyt_raw <- tibble()
 for (title in nyt_articles){
   nyt_raw <- nyt_raw %>%
@@ -243,8 +247,33 @@ data_prep <- function(x,y,z){
   ii <- unite(i,"text",y:z,remove = TRUE,sep = "")
 }
 
+# Create bags for the two newspapers
+guard_bag <- data_prep(guard_raw, 'V1', 'V513')
+nyt_bag <- data_prep(nyt_raw, 'V1', 'V187')
 
+# Newspapers
+newspaper <- c("The Guardian", "The New York Times")
 
+# Necessary text to run tf-idf evaluation
+tf_idf_text <- tibble(newspaper, text = t(tibble(guard_bag, nyt_bag, .name_repair = "universal")))
+
+# Un-nest words from each newspaper, remove stop words, and add word counts
+word_count <- tf_idf_text %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>%
+  count(newspaper, word, sort = TRUE)
+
+# Group total word count by newspaper
+total_words <- word_count %>% 
+  group_by(newspaper) %>% 
+  summarize(total = sum(n))
+
+# Join together word count and total words
+news_words <- left_join(word_count, total_words)
+
+# Add tf-idf evaluation to the list of words
+news_words <- news_words %>%
+  bind_tf_idf(word, newspaper, n)
 
 ```
 
