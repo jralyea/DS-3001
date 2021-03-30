@@ -1,0 +1,202 @@
+---
+title: "Lab 8"
+author: "bill cull"
+date: "3/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+The goal is to get a general idea of patterns associated with articles being written on the broad topic of Data Science (you can also choose to select a sub-topic). In doing so your data science team has decided to explore periodicals from around the country in a effort to track the relative positive or negative sentiment and word frequencies. Luckily your team has access to a world class library search engine call LexusNexus (NexusUni) that provides access to newspapers from around the country dating back decades. You'll first need to decided what words you want to track and what time might be interesting to begin your search. 
+
+You'll need to select several newspapers from different regions in the country limiting the search to 100 articles from each paper, run sentiment analysis with each newspaper serving as a corpus and then compare the level of positive or negative connotation associated with the outcomes. Also, run tf-idf on each corpus (newspapers) and work to compare the differences between the distributions (5 to 6 newspapers should be fine)
+
+Your main goal (and the goal of all practicing data scientists!) is to translate this information into action. What patterns do you see, why do you believe this to be the case? What additional information might you want? Be as specific as possible, but keep in mind this is an initial exploratory effort...more analysis might be needed...but the result can and should advise the next steps you present to the firm. 
+
+
+Please submit a cleanly knitted HTML file describing in detail the steps you took along the way, the results of your analysis and most importantly the implications/next steps you would recommend.  You will report your final results and recommendations next week in class. This will be 5 minutes per group. 
+
+You will need also need to try to collaborate within your group via a GitHub repo, if you choose it would be fine to assign 1 or 2 regions/newspapers per group member, that can then be added to the repo. Create a main repo, everyone should work in this repo and submit independently using branching/pull requests. If you want to try to use pull request to combine everyone's work into a final project, please do so, but it's not a requirement. Select a repo owner that sets up access (push access) for the week, we will rotate owners next week. Also, submit a link to your the GitHub repo (every group member can submit the same link). 
+
+Create collaborations in GitHub: https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-collaborative-development-models
+
+Rstudio Guidance on Git and Github (Including Branching/Pull Requests): https://r-pkgs.org/git.html#git-branch
+
+
+Here is the link to the database search via the UVA Library that should lead you to LexusNexus (Now Nexas Uni)
+https://guides.lib.virginia.edu/az.php?a=l
+
+
+
+
+
+ldf <- list() # creates a list
+listrtf <- folderpath(pattern = "*.rtf") # creates the list of all the rtf files in the directory
+for (k in 1:length(listrtf)){
+ ldf[[k]] <- read_rtf(listrtf[k])
+}
+str(ldf[[1]]) 
+
+
+temp = list.files(pattern="*.rtf")
+
+list2env(lapply(setNames(temp, make.names(gsub("*.rtf$", "", temp))),
+         read_lines), envir = .GlobalEnv)
+         
+
+setwd("~/Desktop/University Wire")
+ldf <- list() # creates a list
+listrtf <- dir(pattern = "*.rtf") # creates the list of all the rtf files in the directory
+for (k in 1:length(listrtf)){
+ ldf[[k]] <- read_rtf(listrtf[k])
+}
+str(ldf[[1]]) 
+
+
+temp = list.files(pattern="*.rtf")
+
+list2env(lapply(setNames(temp, make.names(gsub("*.rtf$", "", temp))),
+         read_lines), envir = .GlobalEnv)
+         
+universitywire_read <- function(title) {
+  uwire_path <- titlelist
+  path <- paste(uwire_path, title, sep = "/")
+  tibs <- path %>%
+    read_rtf %>%
+    tibble() %>%
+    rename(text =".")
+  to_text(tibs)
+  
+}
+
+
+titlelist <- list.files("~/Desktop/University Wire")
+
+for(i in titlelist) {
+  universitywire_read(i)
+  
+}
+
+to_text <- function(tib) {
+  begin.text <-which(tibs$text == "Body") +1
+  end.text <-which(tibs$text =="Classification") -1
+  tibs <- tibs[begin.text:end.text, ]
+  unnest_tokens(tibs, word, text) %>%
+    anti_join(stop_words)
+}
+
+
+
+
+
+```{r}
+
+library(tidyverse)
+install.packages("tidytext")
+library(tidytext)
+install.packages("ggwordcloud")
+library(ggwordcloud)
+install.packages('textdata')
+library(textdata)
+install.packages("textreadr")
+library(textreadr)
+
+```
+
+
+
+
+```{r}
+UW <- read_lines("UniversityWire1a.txt")
+UW <- tibble(UW)
+View(UW)
+UW$UW <- as.character(UW$UW)
+UW <- UW %>%
+  rename(text = "UW") %>%
+  unnest_tokens(word,text) %>%
+  anti_join(stop_words) %>%
+  count(word, sort = TRUE) 
+  
+
+
+
+
+```
+
+
+```{r}
+get_sentiments('afinn')# we see a list of words and there classification, 2,467 - not really that many overall. 
+
+get_sentiments('nrc')# looks like a good amount more 13,891, but as we can see words are classified in several different categories. 
+
+get_sentiments('bing')# looks like a good amount more 6,776, but as we can see just negative and positive. 
+```
+
+```{r}
+
+uwire_sentiment_affin <- UW %>%
+  inner_join(get_sentiments("afinn"))#using a inner join to match words and add the sentiment variable
+
+uwire_sentiment_nrc <- UW %>%
+  inner_join(get_sentiments("nrc"))
+
+uwire_sentiment_bing <- UW %>%
+  inner_join(get_sentiments("bing"))
+
+```
+
+
+```{r}
+
+table(uwire_sentiment_bing$sentiment)
+table(uwire_sentiment_nrc$sentiment)
+table(uwire_sentiment_affin$sentiment)
+
+
+```
+
+```{r}
+
+uwireaffinplot <- ggplot(data = uwire_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram()+
+  ggtitle("University Wire Corpus Sentiment Range")+
+  theme_minimal()
+
+
+uwireaffinplot
+```
+
+```{r}
+set.seed(42)
+UWWordCloud <- ggplot(UW[1:50,], aes(label = word, size = n)
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+
+
+UWWordCloud
+```
+
+
+```{r}
+
+
+
+set.seed(42)
+NRCWordCloud <- ggplot(uwire_sentiment_nrc[1:50,], aes(label = sentiment, size = n)
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+
+
+NRCWordCloud
+
+```
+
+
+
