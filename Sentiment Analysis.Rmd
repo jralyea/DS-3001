@@ -170,49 +170,36 @@ uw.bing <- UW_files %>%
 # AFINN Histograms {.tabset}
 ## The Guardian
 ```{r}
-ggplot(guard.afinn, aes(x = value)) +
-  geom_histogram() +
-  labs(title = "Guardian Sentiment Range",
-       x = "Sentiment Value",
-       y = "Value Count") +  theme_bw()
+# Define a function to create the histograms for each newspaper
+histo <- function(afinn){
+  ggplot(afinn, aes(x = value)) +
+    geom_histogram() + 
+    labs(x = "Sentiment Value",
+         y = "Value Count") +
+    theme_bw()
+}
 
-table(guard.afinn$value)
+histo(guard.afinn)
 ```
 
 ## The New York Times
 ```{r}
-ggplot(nyt.afinn, aes(x = value)) +
-  geom_histogram() +
-  labs(title = "New York Tiems Sentiment Range",
-       x = "Sentiment Value",
-       y = "Value Count") +  theme_bw()
+histo(nyt.afinn)
 ```
 
 ## CE Noticias Financieras English
 ```{r}
-ggplot(ce.afinn, aes(x = value)) +
-  geom_histogram() +
-  labs(title = "CE Noticias Financieras Sentiment Range",
-       x = "Sentiment Value",
-       y = "Value Count") +  theme_bw()
+histo(ce.afinn)
 ```
 
 ## The Chronicle of Higher Education
 ```{r}
-ggplot(che.afinn, aes(x = value)) +
-  geom_histogram() +
-  labs(title = "Chronicle of Higher Education Sentiment Range",
-       x = "Sentiment Value",
-       y = "Value Count") +  theme_bw()
+histo(che.afinn)
 ```
 
 ## University Wire
 ```{r}
-ggplot(uw.afinn, aes(x = value)) +
-  geom_histogram() +
-  labs(title = "University Wire Sentiment Range",
-       x = "Sentiment Value",
-       y = "Value Count") +  theme_bw()
+histo(uw.afinn)
 ```
 
 
