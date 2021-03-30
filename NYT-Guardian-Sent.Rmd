@@ -22,11 +22,14 @@ library(tidytext)
 library(ggwordcloud)
 #install.packages('textdata')
 library(textdata)
+#install.packages('textreadr')
 library(textreadr)
 ```
 
-```{r}
+```{r TestChunk}
 # Testing chunk
+# This code is completely irrelevant to the task at hand,
+# other than me testing random methods to complete the assignment
 
 test.doc <- read_rtf("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles/Price Forecasts For Electronics.rtf") %>%
   tibble() %>%
@@ -43,15 +46,43 @@ test.doc[9:20,]
 
 is.character(test.slice$.)
 
-test.doc[9:20, ]
+test.bank <- nyt_read('Price Forecasts For Electronics.rtf')
+count(test.bank, word, sort=T)
+test.affin <- test.bank %>%
+  inner_join(get_sentiments("afinn"))
+test.nrc <- test.bank %>%
+  inner_join(get_sentiments("nrc"))
+test.bing <- test.bank %>%
+  inner_join(get_sentiments("bing"))
 
+
+join_sent <- function(words){
+  afinn <- inner_join(words, get_sentiments("afinn"))
+  nrc <- inner_join(words, get_sentiments("nrc"))
+  bing <- inner_join(words, get_sentiments("bing"))
+  cbind(words, afinn, nrc, bing)
+}
+test.bank <- join_sent(test.bank)
+
+test.guard.list <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles")
+# Define blank tibble for relevant words in Guardian articles
+test_list <- tibble()
+
+# Add relevant words in Guardian articles to Guardian tibble
+for (i in test.guard.list){
+  test_list <- test_list %>%
+    bind_rows(guardian_read(i))
+}
+test.guard.list
 ```
 
 
-```{r}
+```{r ReadingDataFunctions}
+# Function to read in the data from the guardian
+# Path will need to be updated depending on your system
 guardian_read <- function(title){
   guard_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
-  path <- paste(guard_path, title, sep = "/")
+  path <- paste(guard_path, title, sep = "/") #combine title of article w/ path
   tib <- path %>%
     read_rtf() %>%
     tibble() %>%
@@ -59,9 +90,11 @@ guardian_read <- function(title){
   to_text(tib)
 }
 
+# Function to read data from the New York Times(NYT)
+# Path will need to be updated depending on your system
 nyt_read <- function(title){
   nyt_path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
-  path <- paste(nyt_path, title, sep = "/")
+  path <- paste(nyt_path, title, sep = "/") #combine title of article w/ path
   tib <- path %>%
     read_rtf() %>%
     tibble() %>%
@@ -69,14 +102,133 @@ nyt_read <- function(title){
   to_text(tib)
 }
 
+# Function finds relevant text and un-nests all words into individual rows
 to_text <- function(tib){
-  begin.text <- which(tib$text == "Body") + 1
-  end.text <- which(tib$text == "Classification") - 1
-  tib <- tib[begin.text:end.text, ]
+  begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
+  end.text <- which(tib$text == "Classification") - 1 # end of relevant text
+  tib <- tib[begin.text:end.text, ] # subset to only article text
   unnest_tokens(tib, word, text) %>%
-    anti_join(stop_words)
+    anti_join(stop_words) # remove stop words from text
 }
 ```
+
+```{r ReadData}
+# All guardian article names
+guardian_articles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles")
+
+# All NYT article names
+nyt_articles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles")
+
+# Define blank tibble for relevant words in Guardian articles
+guardian_tib <- tibble()
+
+# Add relevant words in Guardian articles to Guardian tibble
+for (article in guardian_articles){
+  guardian_tib <- guardian_tib %>%
+    bind_rows(guardian_read(article))
+}
+
+# Define blank tibble for relevant words in NYT articles
+nyt_tib <- tibble()
+
+# Add relevant words in NYT articles to NYT tibble
+for (article in nyt_articles){
+  nyt_tib <- nyt_tib %>%
+    bind_rows(nyt_read(article))
+}
+
+```
+
+```{r SentimentAnalyses}
+# The three sentiment analyses for Guardian articles
+guard.afinn <- guardian_tib %>%
+  inner_join(get_sentiments("afinn"))
+guard.nrc <- guardian_tib %>%
+  inner_join(get_sentiments("nrc"))
+guard.bing <- guardian_tib %>%
+  inner_join(get_sentiments("bing"))
+
+# The three sentiment analyses for NYT articles
+nyt.afinn <- nyt_tib %>%
+  inner_join(get_sentiments("afinn"))
+nyt.nrc <- nyt_tib %>%
+  inner_join(get_sentiments("nrc"))
+nyt.bing <- nyt_tib %>%
+  inner_join(get_sentiments("bing"))
+```
+
+```{r TableComparison}
+# AFINN comparisons
+table(guard.afinn$value)
+table(nyt.afinn$value)
+
+# Bing comparisons
+table(guard.bing$sentiment)
+table(nyt.bing$sentiment)
+
+# NRC comparisons
+table(guard.nrc$sentiment)
+table(nyt.nrc$sentiment)
+```
+
+```{r Wordclouds}
+# Determine word counts for relevant words in all Guardian articles
+guardian.count <- guardian_tib %>%
+  count(word, sort = TRUE)
+# Create wordcloud for the 50 words with the most mentions
+ggplot(guardian.count[1:50, ], aes(label = word, size = n)) +
+  geom_text_wordcloud() +
+  theme_minimal()
+
+# Determine word counts for relevant words in all NYT articles
+nyt.count <- nyt_tib %>%
+  count(word, sort = TRUE)
+# Create wordcloud for the 50 words with the most mentions
+ggplot(nyt.count[1:50, ], aes(label = word, size = n)) + 
+  geom_text_wordcloud() +
+  theme_minimal()
+
+```
+
+```{r AFINN-Comparisons}
+ggplot(guard.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "Guardian Sentiment Range") +
+  theme_bw()
+
+ggplot(nyt.afinn, aes(x = value)) +
+  geom_histogram() +
+  labs(title = "New York Time Sentiment Range") +
+  theme_bw()
+```
+
+```{r TF-IDF}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
