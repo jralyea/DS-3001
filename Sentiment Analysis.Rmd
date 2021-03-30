@@ -31,7 +31,6 @@ rtf_read <- function(folder, title){
     read_rtf() %>%
     tibble() %>%
     rename(text = ".") # rename column as "text" instead of "."
-    filter(text != "ABSTRACT" & text != "FULL TEXT") # some articles have an abstract and full text sub-headers, remove them
   to_text(tib) # calls on function created below
 }
 

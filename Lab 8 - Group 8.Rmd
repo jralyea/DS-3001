@@ -1,6 +1,6 @@
 ---
 title: "Text Mining Sentiment"
-author: "William cull, John Hope, and Jay Ralyea"
+author: "William Cull, John Hope, and Jay Ralyea"
 date: "3/30/2021"
 output:
   html_document:
@@ -20,13 +20,13 @@ library(textdata)
 library(textreadr)
 ```
 
-# Introduction
+## Introduction
 We decided to perform Sentiment Analysis on the term "Text Mining". We felt a more specific term would derive differentiated results from the "Data Science" term, and this was a term we were interested in learning more about.
 
 
 
 
-# Narrowing down Source Material 
+### Narrowing Down Source Material 
 Part of our approach to gathering an appropriate corpus to analyze came in part from the use of Google Ngrams. Google Ngram is a search engine that charts word frequencies from a large corpus of books that were printed between 1500 and 2008. The tool generates charts by dividing the number of a word's yearly appearances by the total number of words in the corpus in that year. By searching the term "Text Mining" in Google Ngrams, we were able to identify the prominence of the term across general media resources and its relative growth in frequency from 2000 to 2021. As shown by the image below, the curve for "Text Mining" demonstrates a change in concavity at 2010, indicating a positive "acceleration" of its use and a potential turning point for the phrase.
 
 
@@ -38,21 +38,23 @@ Part of our approach to gathering an appropriate corpus to analyze came in part 
 
 
 
-#Newspaper List
-After taking this into consideration, we were able to filter a timeline of newspaper articles on Nexus Uni dating from January 1st, 2010, to March, 2021. We arrived on our 5 main sources, the five newspapers that contained the highest number of articles within the period of 01/2010-Present. They are the following: 
+### Newspaper List
+After taking this into consideration, we were able to filter the timeline of newspaper articles on Nexus Uni dating from January 1st, 2010 to March 2021. We arrived on our 5 main sources, the five newspapers that contained the highest number of articles within the period of 01/2010-Present. They are the following (in no particular order): 
 
-###  - The New York Times
-###  - The Guardian
-###  - University Wire
-###  - CE NOTICIAS FINANCIERAS (ENGLISH)
-###  - The Chronicle for Higher Educaiton
+1. The Guardian
+2. The New York Times
+3. CE NOTICIAS FINANCIERAS (ENGLISH)
+4. The Chronicle for Higher Education
+5. University Wire
 
 
-```{r JayRalyea-Clean}
+```{r JayRalyea-Clean, include=FALSE}
 ### CLEANING ARTICLES FROM THE GUARDIAN AND THE NEW YORK TIMES ###
+
 # Path will need to be updated depending on your system
 guard.path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
 nyt.path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
+
 # Function to read in rtf files based on folder location and article title
 rtf_read <- function(folder, title){
   path <- paste(folder, title, sep = "/") #combine title of article w/ path
@@ -60,9 +62,9 @@ rtf_read <- function(folder, title){
     read_rtf() %>%
     tibble() %>%
     rename(text = ".") # rename column as "text" instead of "."
-    filter(text != "ABSTRACT" & text != "FULL TEXT") # some articles have an abstract and full text sub-headers, remove them
   to_text(tib) # calls on function created below
 }
+
 # Function finds relevant text and un-nests all words into individual rows
 # The relevant text begins after the tibble row that contains "Body" and ends
 # after the tibble row that contains "Classification." This appears to be true
@@ -74,71 +76,93 @@ to_text <- function(tib){
   unnest_tokens(tib, word, text) %>%
     anti_join(stop_words) # remove stop words from text
 }
+
 # All guardian article names
 guardian_articles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles")
+
 # All NYT article names
 nyt_articles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles")
+
 # Define blank tibble for relevant words in Guardian articles
 Guard_files <- tibble()
+
 # Add relevant words in Guardian articles to Guardian tibble
 for (article in guardian_articles){
   Guard_files <- Guard_files %>% # splits articles into single words
     bind_rows(rtf_read(guard.path, article)) # binds words to end of tibble
 }
+
 # Count for each word in Guardian articles
 Guard_files <- Guard_files %>%
   count(word, sort = TRUE)
+
 # Define blank tibble for relevant words in NYT articles
 NYT_files <- tibble()
+
 # Add relevant words in NYT articles to NYT tibble
 for (article in nyt_articles){
   NYT_files <- NYT_files %>% # splits articles into single words
     bind_rows(rtf_read(nyt.path, article)) # binds words to end of tibble
 }
+
 # Count for each word in NYT articles
 NYT_files <- NYT_files %>%
   count(word, sort = TRUE)
+
 ```
 
 
-```{r JohnHope-Clean}
+```{r JohnHope-Clean, include=FALSE}
 ### CLEANING ARTICLES FROM CE NOTICIAS FINANCIERAS ENGLISH ###
 ###          AND THE CHRONICLE OF HIGHER EDUCATION         ###
+
 # Folder CE and CHE files are saved in
 folder <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles"
+
 # Title of each newspaper
 titles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles")
+
 # CE Noticias Financieras
 CE_files <- read_rtf(paste(folder, titles[1], sep = "/"))
 CE_files <- tibble(CE_files)
+
 # Removing lines w/ information between articles information
 CE_files <- CE_files[-(c(1:66, 110:118, 130:138, 147:155, 197:205, 237:245, 260:268, 277:285, 296:297)),]
+
 # Save raw file lines for TF-IDF
 CE_raw <- CE_files
+
 CE_files <- CE_files %>%
   unnest_tokens(word, CE_files) %>%
   anti_join(stop_words) %>% 
   count(word, sort=TRUE)
+
 # Chronicle of Higher Education
 CHE_files <- read_rtf(paste(folder, titles[2], sep = "/"))
 CHE_files <- tibble(CHE_files)
+
 # Removing lines w/ useless information between articles
 CHE_files <- CHE_files[-(c(1:71, 97:103, 142:148, 177:183, 229:235, 299:305, 364:370, 410:416, 449:455, 479:480)),]
+
 # Save raw file lines for TF-IDF
 CHE_raw <- CHE_files
+
 CHE_files <- CHE_files %>%
   unnest_tokens(word, CHE_files) %>%
   anti_join(stop_words) %>% 
   count(word, sort=TRUE)
 ```
 
-```{r BillCull-Clean}
+```{r BillCull-Clean, include=FALSE}
 ### CLEANING ARTICLES FROM UNIVERSITY WIRE ###
+
 # Read in lines from txt file. Title is third element of titles vector
 UW <- read_lines(paste(folder, titles[3], sep = "/"))
+
 # Place lines in tibble and ensure values are characters
 UW <- tibble(UW)
 UW$UW <- as.character(UW$UW)
+
 # Rename column, unnest words, remove stop words, 
 # and determine count for each word
 UW_files <- UW %>%
@@ -148,38 +172,44 @@ UW_files <- UW %>%
   count(word, sort = TRUE)  
 ```
 
-```{r Sentiments}
+```{r Sentiments, include=FALSE}
 # Sentiment Function
 sent_func <- function(tib, senti){
   tib %>%
     inner_join(get_sentiments(senti))
 }
+
 # The Guardian Sentiments
 guard.afinn <- sent_func(Guard_files, "afinn")
 guard.nrc <- sent_func(Guard_files, "nrc")
 guard.bing <- sent_func(Guard_files, "bing")
+
 # The New York Times sentiments
 nyt.afinn <- sent_func(NYT_files, "afinn")
 nyt.nrc <- sent_func(NYT_files, "nrc")
 nyt.bing <- sent_func(NYT_files, "bing")
+
 # CE Noticias Financieras English sentiments
 ce.afinn <- sent_func(CE_files, "afinn")
 ce.nrc <- sent_func(CE_files, "nrc")
 ce.bing <- sent_func(CE_files, "bing")
+
 # The Chronicle of Higher Education sentiments
 che.afinn <- sent_func(CHE_files, "afinn")
 che.nrc <- sent_func(CHE_files, "nrc")
 che.bing <- sent_func(CHE_files, "bing")
+
 # University Wire sentiments
 uw.afinn <- sent_func(UW_files, "afinn")
 uw.nrc <- sent_func(UW_files, "nrc")
 uw.bing <- sent_func(UW_files, "bing")
 ```
 
-# Wordclouds {.tabset}
-The Following graphics display the 50 words most mentioned in articles where "Text Mining" is mentioned across these 5 Corpuses. Many carry a high level of neutral terms, and we feel this is mostly because people do not know enough about Text Mining to allow for a clear and oustated emotional sentiment on the term yet. However, there are still emotional sentiments on the term that we can gather from these graphics. Further, it is also clear that the subsequent audiences and purposes of each Newspapers allow for individual biases and tones. This separates the wordcloud graphics from each other greatly.For the University Wire, terms like research and student are mentioned, which is far and away from the New York Times "Shakespeare", which was one of the most common terms. Yet, these newspapers both share a rather high use of "Humanities" which can allow us to gather that Text Mining technology is being applied to the research of historic text involving the humanities.
 
-## The Guardian
+## Wordclouds {.tabset}
+The following graphics display the 50 words most mentioned in articles where "Text Mining" is mentioned across these 5 Corpuses. Many carry a high level of neutral terms, and we think this is likely because people do not know enough about Text Mining to allow for a clear and discernible emotional response to the term yet. However, there are still emotional sentiments on the term that we can gather from these graphics. Further, it is also clear that the subsequent audiences and purposes of each Newspapers allow for individual biases and tones. This separates the wordcloud graphics from each other greatly. For the University Wire, terms like research and student are mentioned, which is far and away from the New York Times "Shakespeare", which was one of the most common terms. Yet, these newspapers both share a rather high use of "Humanities" which can allow us to gather that Text Mining technology is likely applied to research in the humanities.
+
+### The Guardian
 ```{r}
 # Create wordcloud for the 50 words with the most mentions
 wordcloud <- function(file){
@@ -190,39 +220,42 @@ wordcloud <- function(file){
 # Guardian Wordcloud
 wordcloud(Guard_files)
 ```
-## The New York Times
+
+### The New York Times
 ```{r}
 # NYT Wordcloud
 wordcloud(NYT_files)
 ```
-## CE Noticias Financieras English
+
+### CE Noticias Financieras English
 ```{r}
 # CE Wordcloud
 wordcloud(CE_files)
 ```
-## The Chronicle of Higher Education
+
+### The Chronicle of Higher Education
 ```{r}
 # CHE Wordcloud
 wordcloud(CHE_files)
 ```
 
-## University Wire
+### University Wire
 ```{r}
 # UW Wordcloud
 wordcloud(UW_files)
 ```
 
 
-# AFINN Histograms {.tabset}
+## AFINN Histograms {.tabset}
 
 The following histograms indicate the distribution of the word score frequencies for positive connotations, negative connotations or neutral connotations for each newspaper. Words scores range from minus five (negative) to plus five (positive). Each newspaper out of the five selected seem to display a somewhat similar distribution, with low frequencies on the sentiment extremes and high frequency with mild positivity and negativity. This may be because the term "Text Mining" is technical and more specific than a term like "Data Science" and thus, less subject to emotional interpretation or generalization in the media. 
 
-## The Guardian
+### The Guardian
 ```{r}
 # Define a function to create the histograms for each newspaper
 histo <- function(afinn){
   ggplot(afinn, aes(x = value)) +
-    geom_histogram() + 
+    geom_histogram(binwidth = 1, color = "white") + 
     labs(x = "Sentiment Value",
          y = "Value Count") +
     theme_bw()
@@ -231,25 +264,25 @@ histo <- function(afinn){
 histo(guard.afinn)
 ```
 
-## The New York Times
+### The New York Times
 ```{r}
 # NYT Histogram
 histo(nyt.afinn)
 ```
 
-## CE Noticias Financieras English
+### CE Noticias Financieras English
 ```{r}
 # CE Histogram
 histo(ce.afinn)
 ```
 
-## The Chronicle of Higher Education
+### The Chronicle of Higher Education
 ```{r}
 # CHE Histogram
 histo(che.afinn)
 ```
 
-## University Wire
+### University Wire
 ```{r}
 # UW Histogram
 histo(uw.afinn)
@@ -260,6 +293,7 @@ histo(uw.afinn)
 ```{r Raw-TF-IDF-Jay}
 # Raw files need to be found for The Guardian and The New York Times
 # as they were not defined previously
+
 # Create tibble of article lines
 raw_read <- function(folder, title){
   folder_path <- folder
@@ -271,24 +305,28 @@ raw_read <- function(folder, title){
     filter(text != "ABSTRACT" & text != "FULL TEXT") # some articles have an abstract and full text sub-headers, remove them
   relevant_words(tib)
 }
+
 # Find the relevant sections in the article
 relevant_words <- function(tib){
   begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
   end.text <- which(tib$text == "Captions:" | tib$text == "Classification") - 1 # end of relevant text
   tib[begin.text:end.text, ] # subset to only article text
 }
+
 # Generate tibble of raw data for The Guardian
 Guard_raw <- tibble()
 for (title in guardian_articles){
   Guard_raw <- Guard_raw %>%
     bind_rows(raw_read(guard.path, title))
 }
+
 # Generate tibble of raw data for The New York Times
 NYT_raw <- tibble()
 for (title in nyt_articles){
   NYT_raw <- NYT_raw %>%
     bind_rows(raw_read(nyt.path, title))
 }
+
 ```
 
 ```{r Raw-TF-IDF-Bill}
@@ -341,25 +379,18 @@ news_words <- news_words %>%
   bind_tf_idf(word, newspaper, n)
 ```
 
-#TF-IDF of all 5 Newspapers
+## TF-IDF of the Five Newspapers
 ```{r}
 
 library(DT)
 
-DT::datatable(news_words)
+DT::datatable(news_words[1:300, ])
 
 ```
 
 
-#Analysis & Next Steps
+## Analysis & Next Steps
 
- As shown by the rather low TFIDF values, measuring the sentiment trend for the term "Text Mining" could obviously be well aided by further steps, and these results indicate a clear recommendation on those next steps. The inverse document frequency is a measure of how much information the word provides, and how common or rare it is across all documents based on its frequency relative to the whole. Given this, our somewhat low TFIDF values indicate that there may be a sourcing issue, which could either be remedied by focusing our inputs more towards media that are more concentrated on the topic, or by decreasing the amount of articles in aggregate we use, or both. At the same time, our group often ran into a shortage of content after removing stop words and filtering down to the actual substantial texts, so perhaps making our selection process for inputs more specific would be best. After all, our selected articles were just articles that contained the phrase "Text Mining" rather than have it in the title or in some greater context, which caused some of the articles to be misrepresentations of the word given that it was not the true subject of the piece and was only mentioned once. 
+As shown by the rather low TFIDF values, measuring the sentiment trend for the term "Text Mining" could be well aided by further steps, and these results indicate a clear recommendation on those next steps. The inverse document frequency is a measure of how much information the word provides and a measure how common it is across all documents based on its frequency relative to the whole. Given this, our somewhat low TFIDF values indicate that there may be a sourcing issue, which could either be remedied by focusing our inputs more towards media that are more concentrated on the topic, or by decreasing the amount of articles in aggregate we use, or both. At the same time, our group often ran into a shortage of content after removing stop words and filtering down to the actual substantial texts, so perhaps making our selection process for inputs more specific would be best. After all, our selected articles were just articles that contained the phrase "Text Mining" rather than have it in the title or in some greater context, which caused some of the articles to be misrepresentations of the word given that it was not the true subject of the piece and was only mentioned once. For example, one article from The Guardian titled "Beatles did not revolutionise music, study claims" simply mentions the text mining once as the method the researchers used. This article is likely to have a negative sentiment toward the Beatles, yet this sentiment will be picked up by our sentiment analysis and interpreted as a negative view of text mining.
  
- Performing this analysis properly requires that we reconsider the question we are actually aiming to answer and in turn, what resources we allocate to these methods. Given the "Garbage-in, Garbage-out" principle, our choice of newspapers and text are crucial to the validity and quality of these insights, and our choices for our inputs were based on some assumptions that could be sharpened further. For example, a crucial assumption we made during our lab was that the the 5 newspapers with the most articles that had an instance of the term "text mining" would be best. However, we do not know if these 5 newspapers accurately captured all demographic baskets of the american population, nor do we have an idea of the opinions of those who do not read newspapers. Using R, one can implement these tools and discern whether a particular term carries a systematic pattern of sentiment in terms of writing, but that does not account for the absorbtion of that information and the resulting opinions of actual readers (it tells us more about writing trends than the true thoughts of people). In the future, we could specifiy who exactly we're trying to learn about by analyzing different media types and searching by group rather than by the rubber stamp method of which corpuses have the most content. Overall though, the sentiment on "Text Mining" is positive overall. 
-
-
-
-
-
-
-
+Performing this analysis properly requires that we reconsider the question we are actually aiming to answer and in turn, what resources we allocate to these methods. Given the "poor data in, poor results out" principle, our choice of newspapers and text are crucial to the validity and quality of these insights, and our choices for our inputs were based on some assumptions that could be sharpened further. For example, a crucial assumption we made during our lab was that the 5 newspapers with the most articles that had an instance of the term "text mining" would be best. However, we do not know if these 5 newspapers accurately captured all demographic baskets of the American population, nor do we have an idea of the opinions of those who do not read newspapers. Using R, one can implement these tools and discern whether a particular term carries a systematic pattern of sentiment in terms of writing, but that does not account for the absorption of the information and the resulting opinions of actual readers (it tells us more about writing trends than the true thoughts of people). In the future, we could specifiy who exactly we are trying to learn about by analyzing different media types and searching by group rather than by the rubber stamp method of which corpuses have the most content. Overall though, our results indicate the general sentiment of "Text Mining" is positive. 
