@@ -17,7 +17,9 @@ library(textreadr)
 # Introduction
 
 
-```{r JayRalyea}
+```{r JayRalyea-Clean}
+### CLEANING ARTICLES FROM THE GUARDIAN AND THE NEW YORK TIMES ###
+
 # Path will need to be updated depending on your system
 guard.path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/Guardian-Articles"
 nyt.path <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/NYT-Articles"
@@ -29,6 +31,7 @@ rtf_read <- function(folder, title){
     read_rtf() %>%
     tibble() %>%
     rename(text = ".") # rename column as "text" instead of "."
+    filter(text != "ABSTRACT" & text != "FULL TEXT") # some articles have an abstract and full text sub-headers, remove them
   to_text(tib) # calls on function created below
 }
 
@@ -38,7 +41,7 @@ rtf_read <- function(folder, title){
 # for all files downloaded from LexisNexus.
 to_text <- function(tib){
   begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
-  end.text <- which(tib$text == "Classification") - 1 # end of relevant text
+  end.text <- which(tib$text == "Captions:" | tib$text == "Classification") - 1 # end of relevant text
   tib <- tib[begin.text:end.text, ] # subset to only article text
   unnest_tokens(tib, word, text) %>%
     anti_join(stop_words) # remove stop words from text
@@ -79,20 +82,25 @@ NYT_files <- NYT_files %>%
 ```
 
 
-```{r JohnHope}
+```{r JohnHope-Clean}
+### CLEANING ARTICLES FROM CE NOTICIAS FINANCIERAS ENGLISH ###
+###          AND THE CHRONICLE OF HIGHER EDUCATION         ###
+
 # Folder CE and CHE files are saved in
 folder <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles"
 
 # Title of each newspaper
 titles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles")
 
-# The Spanish One
+# CE Noticias Financieras
 CE_files <- read_rtf(paste(folder, titles[1], sep = "/"))
 CE_files <- tibble(CE_files)
 
 # Removing lines w/ information between articles information
-
 CE_files <- CE_files[-(c(1:66, 110:118, 130:138, 147:155, 197:205, 237:245, 260:268, 277:285, 296:297)),]
+
+# Save raw file lines for TF-IDF
+CE_raw <- CE_files
 
 CE_files <- CE_files %>%
   unnest_tokens(word, CE_files) %>%
@@ -102,7 +110,12 @@ CE_files <- CE_files %>%
 # Chronicle of Higher Education
 CHE_files <- read_rtf(paste(folder, titles[2], sep = "/"))
 CHE_files <- tibble(CHE_files)
+
+# Removing lines w/ useless information between articles
 CHE_files <- CHE_files[-(c(1:71, 97:103, 142:148, 177:183, 229:235, 299:305, 364:370, 410:416, 449:455, 479:480)),]
+
+# Save raw file lines for TF-IDF
+CHE_raw <- CHE_files
 
 CHE_files <- CHE_files %>%
   unnest_tokens(word, CHE_files) %>%
@@ -110,15 +123,23 @@ CHE_files <- CHE_files %>%
   count(word, sort=TRUE)
 ```
 
-```{r BillCull}
+```{r BillCull-Clean}
+### CLEANING ARTICLES FROM UNIVERSITY WIRE ###
+
+# Read in lines from txt file. Title is third element of titles vector
 UW <- read_lines(paste(folder, titles[3], sep = "/"))
+
+# Place lines in tibble and ensure values are characters
 UW <- tibble(UW)
 UW$UW <- as.character(UW$UW)
+
+# Rename column, unnest words, remove stop words, 
+# and determine count for each word
 UW_files <- UW %>%
   rename(text = "UW") %>%
   unnest_tokens(word,text) %>%
   anti_join(stop_words) %>%
-  count(word, sort = TRUE) 
+  count(word, sort = TRUE)  
 ```
 
 ```{r Sentiments}
@@ -232,10 +253,103 @@ histo(uw.afinn)
 
 
 
+```{r Raw-TF-IDF-Jay}
+# Raw files need to be found for The Guardian and The New York Times
+# as they were not defined previously
+
+# Create tibble of article lines
+raw_read <- function(folder, title){
+  folder_path <- folder
+  path <- paste(folder_path, title, sep = "/") #combine title of article w/ path
+  tib <- path %>%
+    read_rtf() %>%
+    tibble() %>%
+    rename(text = ".") %>% # rename column as "text" instead of "." 
+    filter(text != "ABSTRACT" & text != "FULL TEXT") # some articles have an abstract and full text sub-headers, remove them
+  relevant_words(tib)
+}
+
+# Find the relevant sections in the article
+relevant_words <- function(tib){
+  begin.text <- which(tib$text == "Body") + 1 # beginning of relevant text
+  end.text <- which(tib$text == "Captions:" | tib$text == "Classification") - 1 # end of relevant text
+  tib[begin.text:end.text, ] # subset to only article text
+}
+
+# Generate tibble of raw data for The Guardian
+Guard_raw <- tibble()
+for (title in guardian_articles){
+  Guard_raw <- Guard_raw %>%
+    bind_rows(raw_read(guard.path, title))
+}
+
+# Generate tibble of raw data for The New York Times
+NYT_raw <- tibble()
+for (title in nyt_articles){
+  NYT_raw <- NYT_raw %>%
+    bind_rows(raw_read(nyt.path, title))
+}
+
+```
+
+```{r Raw-TF-IDF-Bill}
+# Find raw files for University Wire as it was not done previously
+UW_raw <- UW %>%
+  rename(text = "UW") %>%
+  filter(text != "")
+```
 
 
+```{r TF-IDF-Eval}
+# Data prep to allow TF-IDF operation on newspapers
+data_prep <- function(x,y,z){
+  i <- as_tibble(t(x))
+  ii <- unite(i,"text",y:z,remove = TRUE,sep = "")
+}
 
+# Determine necessary end value for the data_prep function
+# This returns a value of "V(NUM ROWS IN TIBBLE)"
+end_val <- function(tib){
+  end.row <- as.character(nrow(tib))
+  paste("V", end.row, sep = "")
+}
 
+# Create bags for the newspapers
+Guard_bag <- data_prep(Guard_raw, 'V1', end_val(Guard_raw))
+NYT_bag <- data_prep(NYT_raw, 'V1', end_val(NYT_raw))
+CE_bag <- data_prep(CE_raw, 'V1', end_val(CE_raw))
+CHE_bag <- data_prep(CHE_raw, 'V1', end_val(CHE_raw))
+UW_bag <- data_prep(UW_raw, 'V1', end_val(UW_raw))
+
+# Newspapers
+newspaper <- c("The Guardian", "The New York Times", 
+               "CE Noticias Financieras", "The Chronicle of Higher Ed",
+               "University Wire")
+
+# Necessary text to run tf-idf evaluation
+tf_idf_text <- tibble(newspaper, text = t(tibble(Guard_bag, NYT_bag,
+                                                 CE_bag, CHE_bag, UW_bag,
+                                                 .name_repair = "universal")))
+
+# Un-nest words from each newspaper, remove stop words, and add word counts
+word_count <- tf_idf_text %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>%
+  count(newspaper, word, sort = TRUE)
+
+# Group total word count by newspaper
+total_words <- word_count %>% 
+  group_by(newspaper) %>% 
+  summarize(total = sum(n))
+
+# Join together word count and total words
+news_words <- left_join(word_count, total_words)
+
+# Add tf-idf evaluation to the list of words
+news_words <- news_words %>%
+  bind_tf_idf(word, newspaper, n)
+
+```
 
 
 
