@@ -125,45 +125,36 @@ UW_files <- UW %>%
 ```
 
 ```{r Sentiments}
+# Sentiment Function
+sent_func <- function(tib, senti){
+  tib %>%
+    inner_join(get_sentiments(senti))
+}
+
 # The Guardian Sentiments
-guard.afinn <- Guard_files %>%
-  inner_join(get_sentiments("afinn"))
-guard.nrc <- Guard_files %>%
-  inner_join(get_sentiments("nrc"))
-guard.bing <- Guard_files %>%
-  inner_join(get_sentiments("bing"))
+guard.afinn <- sent_func(Guard_files, "afinn")
+guard.nrc <- sent_func(Guard_files, "nrc")
+guard.bing <- sent_func(Guard_files, "bing")
 
 # The New York Times sentiments
-nyt.afinn <- NYT_files %>%
-  inner_join(get_sentiments("afinn"))
-nyt.nrc <- NYT_files %>%
-  inner_join(get_sentiments("nrc"))
-nyt.bing <- NYT_files %>%
-  inner_join(get_sentiments("bing"))
+nyt.afinn <- sent_func(NYT_files, "afinn")
+nyt.nrc <- sent_func(NYT_files, "nrc")
+nyt.bing <- sent_func(NYT_files, "bing")
 
 # CE Noticias Financieras English sentiments
-ce.afinn <- CE_files %>%
-  inner_join(get_sentiments("afinn"))
-ce.nrc <- CE_files %>%
-  inner_join(get_sentiments("nrc"))
-ce.bing <- CE_files %>%
-  inner_join(get_sentiments("bing"))
+ce.afinn <- sent_func(CE_files, "afinn")
+ce.nrc <- sent_func(CE_files, "nrc")
+ce.bing <- sent_func(CE_files, "bing")
 
 # The Chronicle of Higher Education sentiments
-che.afinn <- CHE_files %>%
-  inner_join(get_sentiments("afinn"))
-che.nrc <- CHE_files %>%
-  inner_join(get_sentiments("nrc"))
-che.bing <- CHE_files %>%
-  inner_join(get_sentiments("bing"))
+che.afinn <- sent_func(CHE_files, "afinn")
+che.nrc <- sent_func(CHE_files, "nrc")
+che.bing <- sent_func(CHE_files, "bing")
 
 # University Wire sentiments
-uw.afinn <- UW_files %>%
-  inner_join(get_sentiments("afinn"))
-uw.nrc <- UW_files %>%
-  inner_join(get_sentiments("nrc"))
-uw.bing <- UW_files %>% 
-  inner_join(get_sentiments("bing"))
+uw.afinn <- sent_func(UW_files, "afinn")
+uw.nrc <- sent_func(UW_files, "nrc")
+uw.bing <- sent_func(UW_files, "bing")
 ```
 
 
