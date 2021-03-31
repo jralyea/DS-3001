@@ -110,6 +110,7 @@ CHE_files <- CHE_files %>%
   filter(Text != "FULL TEXT") %>%
   filter(!grepl("Load-Date", Text, fixed = TRUE))
 
+
 che_files_raw <- CHE_files
 
 CHE_files <- CHE_files %>%
