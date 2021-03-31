@@ -117,19 +117,39 @@ NYT_files <- NYT_files %>%
 ###          AND THE CHRONICLE OF HIGHER EDUCATION         ###
 
 # Folder CE and CHE files are saved in
+
 folder <- "C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles"
 
 # Title of each newspaper
+
 titles <- list.files("C:/Users/Student/Documents/Third Year Sem 2/DS 3001/DS-3001/All Articles")
 
 # CE Noticias Financieras
+
 CE_files <- read_rtf(paste(folder, titles[1], sep = "/"))
 CE_files <- tibble(CE_files)
 
-# Removing lines w/ information between articles information
-CE_files <- CE_files[-(c(1:66, 110:118, 130:138, 147:155, 197:205, 237:245, 260:268, 277:285, 296:297)),]
+# Finding sequences of lines we want to keep; the actual article content
+
+bodies <- which(CE_files[,1] == "Body") + 1 
+end <- which(CE_files[,1] == "End of Document") - 1
+
+# Creating the sequences between start and end of articles to keep
+
+lines_to_keep <- c() 
+for (i in 1:8){
+  lines_to_keep <- c(lines_to_keep, bodies[i]:end[i])
+}
+
+CE_files <- CE_files[lines_to_keep,]
+
+# Removing more unnecessary lines
+
+CE_files <- CE_files %>%
+  filter(!grepl("Load-Date", CE_files, fixed = TRUE))
 
 # Save raw file lines for TF-IDF
+
 CE_raw <- CE_files
 
 CE_files <- CE_files %>%
@@ -138,17 +158,40 @@ CE_files <- CE_files %>%
   count(word, sort=TRUE)
 
 # Chronicle of Higher Education
+
 CHE_files <- read_rtf(paste(folder, titles[2], sep = "/"))
 CHE_files <- tibble(CHE_files)
 
-# Removing lines w/ useless information between articles
-CHE_files <- CHE_files[-(c(1:71, 97:103, 142:148, 177:183, 229:235, 299:305, 364:370, 410:416, 449:455, 479:480)),]
+# Finding sequences of lines we want to keep; the actual article content
+
+bodies_2 <- which(CHE_files[,1] == "Body") + 1
+end_2 <- which(CHE_files[,1] == "End of Document") - 1
+
+# Creating the sequences between start and end of articles to keep
+
+lines_to_keep_2 <- c()
+for (i in 1:9){
+  lines_to_keep_2 <- c(lines_to_keep_2, bodies_2[i]:end_2[i])
+}
+
+CHE_files <- CHE_files[lines_to_keep_2,]
+
+# Renaming the column so that it can be used for dplyr in the next step
+
+colnames(CHE_files) <- "Text"
+
+# Removing unnecessary text
+CHE_files <- CHE_files %>%
+  filter(Text != "ABSTRACT") %>%
+  filter(Text != "FULL TEXT") %>%
+  filter(!grepl("Load-Date", Text, fixed = TRUE))
 
 # Save raw file lines for TF-IDF
+
 CHE_raw <- CHE_files
 
 CHE_files <- CHE_files %>%
-  unnest_tokens(word, CHE_files) %>%
+  unnest_tokens(word, Text) %>%
   anti_join(stop_words) %>% 
   count(word, sort=TRUE)
 ```
