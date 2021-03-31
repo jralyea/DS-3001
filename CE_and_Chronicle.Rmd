@@ -16,26 +16,40 @@ library(textdata)
 library(dplyr)
 ```
 
-The first publication we will go through here is the 
-
-```{r}
+The first publication we will go through here is the CE Noticerias Financias. The rtf files is all of the articles in the publication saved into one file. The rtf was read, created into a tibble, and cleaned by removing lines between the articles, which was found by going through and removing text between "Body" and "Load-Date".
+```{r, include=FALSE}
 CE_files <- read_rtf("CEFiles.RTF")
 CE_files <- tibble(CE_files)
 
-View(CE_files)
+#raw file for tf-idf
+
 ce_files_raw <- CE_files
 
-# Removing lines w/ information between articles information
+# Removing lines w/ useless information between articles
 
-CE_files <- CE_files[-(c(1:66, 110:118, 130:138, 147:155, 197:205, 237:245, 260:268, 277:285, 296:297)),]
+bodies <- which(CE_files[,1] == "Body") + 1
+end <- which(CE_files[,1] == "End of Document") - 1
+
+lines_to_keep <- c()
+for (i in 1:8){
+  lines_to_keep <- c(lines_to_keep, bodies[i]:end[i])
+}
+
+CE_files <- CE_files[lines_to_keep,]
+
+CE_files <- CE_files %>%
+  filter(!grepl("Load-Date", CE_files, fixed = TRUE))
+
+# Un-nesting and removing stop words
 
 CE_files <- CE_files %>%
   unnest_tokens(word, CE_files) %>%
   anti_join(stop_words) %>% 
   count(word, sort=TRUE)
 
-get_sentiments("nrc")
+```
 
+```{r, include=FALSE}
 ce_files_sentiment_nrc <- CE_files %>%
   inner_join(get_sentiments("nrc"))
 
@@ -48,84 +62,64 @@ ce_files_sentiment_bing <- CE_files %>%
 table(ce_files_sentiment_nrc$sentiment)
 table(ce_files_sentiment_afinn$value)
 table(ce_files_sentiment_bing$sentiment)
+```
 
+```{r, include=FALSE}
 ggplot(data = ce_files_sentiment_afinn, 
        aes(x=value)
         )+
   geom_histogram()+
   ggtitle("Publication Sentiment Range")+
   theme_minimal()
+```
+
+```{r, include=FALSE}
 
 ggplot(CE_files[1:50,], aes(label = word, size = n)
        ) +
   geom_text_wordcloud() +
   theme_minimal()
-
-article1 <- ce_files_raw[67:109,]
-article2 <- ce_files_raw[119:128,]
-article3 <- ce_files_raw[139:146,]
-article4 <- ce_files_raw[156:196,]
-article5 <- ce_files_raw[206:236,]
-article6 <- ce_files_raw[246:259,]
-article7 <- ce_files_raw[269:276,]
-article8 <- ce_files_raw[286:295,]
-
-data_prep <- function(x,y,z){
-  i <- as_tibble(t(x))
-  ii <- unite(i,"text",y:z,remove = TRUE,sep = "")
-}
-
-ce_files_bag1 <- data_prep(article1,'V1','V43')
-ce_files_bag2 <- data_prep(article2,'V1','V10')
-ce_files_bag3 <- data_prep(article3,'V1','V8')
-ce_files_bag4 <- data_prep(article4,'V1','V41')
-ce_files_bag5 <- data_prep(article5,'V1','V31')
-ce_files_bag6 <- data_prep(article6,'V1','V14')
-ce_files_bag7 <- data_prep(article7,'V1','V8')
-ce_files_bag8 <- data_prep(article8,'V1','V10')
-
-article <- as.character(1:8)
-
-tf_idf_text <- tibble(article, text=t(tibble(ce_files_bag1, ce_files_bag2, ce_files_bag3, ce_files_bag4, ce_files_bag5, ce_files_bag6, ce_files_bag7, ce_files_bag8, .name_repair = "universal")))
-
-word_count <- tf_idf_text %>%
-  unnest_tokens(word, text) %>%
-  count(article, word, sort = TRUE)
-
-total_words <- word_count %>% 
-  group_by(article) %>% 
-  summarize(total = sum(n))
-
-ce_files_words <- left_join(word_count, total_words)
-
-View(ce_files_words)
-
-ce_files_words <- ce_files_words %>%
-  bind_tf_idf(word, article, n)
-
-View(ce_files_words)
 ```
 With the CE Publication, there seems to be more association with positive words as a whole. The biggest sentiments by "nrc" prevelant are "positive and "trust". However, this is followed by "negative". Though there are instances are negative sentiment in the text, this publication is seemingly skewed more towards postive text, as seen in the graph. In addition, when we look at the cloud of the most common words, ones that jump out most are neutral, but the words around the center, such as intelligence, learning, knowledge, access, also jump out as positive words.
 
 
 
 The second publication to go through is the Chronicle of Higher Education, which contained 9 articles regarding text mining.
-```{r}
+```{r, include=FALSE}
+# Reading
+
 CHE_files <- read_rtf("CHEFiles.RTF")
 CHE_files <- tibble(CHE_files)
 
-View(CHE_files)
+# Cleaning
 
-CHE_files <- CHE_files[-(c(1:71, 97:103, 142:148, 177:183, 229:235, 299:305, 364:370, 410:416, 449:455, 479:480)),]
+bodies_2 <- which(CHE_files[,1] == "Body") + 1
+end_2 <- which(CHE_files[,1] == "End of Document") - 1
+
+lines_to_keep_2 <- c()
+for (i in 1:9){
+  lines_to_keep_2 <- c(lines_to_keep_2, bodies_2[i]:end_2[i])
+}
+
+CHE_files <- CHE_files[lines_to_keep_2,]
+
+colnames(CHE_files) <- "Text"
+
+CHE_files <- CHE_files %>%
+  filter(Text != "ABSTRACT") %>%
+  filter(Text != "FULL TEXT") %>%
+  filter(!grepl("Load-Date", Text, fixed = TRUE))
 
 che_files_raw <- CHE_files
 
-View(che_files_raw)
-
 CHE_files <- CHE_files %>%
-  unnest_tokens(word, CHE_files) %>%
+  unnest_tokens(word, Text) %>%
   anti_join(stop_words) %>% 
   count(word, sort=TRUE)
+```
+
+```{r}
+#Sentiment analysis
 
 che_files_sentiment_nrc <- CHE_files %>%
   inner_join(get_sentiments("nrc"))
@@ -139,6 +133,11 @@ che_files_sentiment_bing <- CHE_files %>%
 table(che_files_sentiment_nrc$sentiment)
 table(che_files_sentiment_afinn$value)
 table(che_files_sentiment_bing$sentiment)
+```
+
+
+```{r}
+#Histogram
 
 ggplot(data = che_files_sentiment_afinn, 
        aes(x=value)
@@ -146,51 +145,16 @@ ggplot(data = che_files_sentiment_afinn,
   geom_histogram()+
   ggtitle("Publication Sentiment Range")+
   theme_minimal()
+```
+
+
+```{r}
+#Cloud
 
 ggplot(CHE_files[1:50,], aes(label = word, size = n)
        ) +
   geom_text_wordcloud() +
   theme_minimal()
-
-che_article1 <- che_files_raw[67:109,]
-che_article2 <- che_files_raw[119:128,]
-che_article3 <- che_files_raw[139:146,]
-che_article4 <- che_files_raw[156:196,]
-che_article5 <- che_files_raw[206:236,]
-che_article6 <- che_files_raw[246:259,]
-che_article7 <- che_files_raw[269:276,]
-che_article8 <- che_files_raw[286:295,]
-che_article9 <- che_files_raw[286:295,]
-
-che_files_bag1 <- data_prep(che_article1,'V1','V43')
-che_files_bag2 <- data_prep(che_article2,'V1','V10')
-che_files_bag3 <- data_prep(che_article3,'V1','V8')
-che_files_bag4 <- data_prep(che_article4,'V1','V41')
-che_files_bag5 <- data_prep(che_article5,'V1','V31')
-che_files_bag6 <- data_prep(che_article6,'V1','V14')
-che_files_bag7 <- data_prep(che_article7,'V1','V8')
-che_files_bag8 <- data_prep(che_article8,'V1','V10')
-che_files_bag9 <- data_prep(che_article9,'V1','V10')
-
-che_articles <- as.character(1:9)
-
-tf_idf_text_2 <- tibble(che_articles, text=t(tibble(che_files_bag1, che_files_bag2, che_files_bag3, che_files_bag4, che_files_bag5, che_files_bag6, che_files_bag7, che_files_bag8, che_files_bag9, .name_repair = "universal")))
-
-word_count_2 <- tf_idf_text_2 %>%
-  unnest_tokens(word, text) %>%
-  count(che_articles, word, sort = TRUE)
-
-total_words_2 <- word_count_2 %>% 
-  group_by(che_articles) %>% 
-  summarize(total = sum(n))
-
-che_files_words <- left_join(word_count_2, total_words_2)
-
-che_files_words <- che_files_words %>%
-  bind_tf_idf(word, che_article, n)
-
-View(ce_files_words)
-
 ```
 
 The Chronicle of Higher education seems to be a much more balanced publication, as it comes to overall sentiment. Once again, positive and trust are the highest nrc sentiments, and negative is a close third. However, what we see in the afinn values is that the Chronicle of Higher Education seems to have little to no skew. When we look at the distribution of afinn values on the histogram, we see a bimodal graph, with peaks at -2 and 2, and about an even dstribution on both sides of the x axis. Furthermore, when we look at the bing sentiments, we see that this publication actually has more negative words than positive; 202 negative vs 179 positive.
